@@ -1,101 +1,150 @@
-# 🛡️ CyberLab — Personal Security & Bug Bounty Toolkit
+<div align="center">
 
-> A self-hosted, personal hacking toolkit for bug bounty hunters and penetration testers.  
-> No cloud, no login, no SaaS — just launch and hack.
+<img src="https://img.shields.io/badge/CyberLab-Personal%20Security%20Toolkit-00d4ff?style=for-the-badge&logo=shield&logoColor=black" alt="CyberLab" />
 
-[![NestJS](https://img.shields.io/badge/API-NestJS%2010-E0234E?logo=nestjs&logoColor=white)](https://nestjs.com)
-[![Next.js](https://img.shields.io/badge/Web-Next.js%2015-000000?logo=next.js&logoColor=white)](https://nextjs.org)
-[![Prisma](https://img.shields.io/badge/ORM-Prisma%205-2D3748?logo=prisma&logoColor=white)](https://prisma.io)
-[![PostgreSQL](https://img.shields.io/badge/DB-PostgreSQL%2016-336791?logo=postgresql&logoColor=white)](https://www.postgresql.org)
-[![TypeScript](https://img.shields.io/badge/Lang-TypeScript%205-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
-[![pnpm](https://img.shields.io/badge/Package-pnpm-F69220?logo=pnpm&logoColor=white)](https://pnpm.io)
+# CyberLab — Personal Bug Bounty & Penetration Testing Toolkit
 
----
+**Self-hosted security toolkit for bug bounty hunters, pen testers, and ethical hackers.**  
+11 hacking tools · 14 interactive labs · Findings tracker · No login · No cloud · One command start
 
-## 📸 Screenshots
+[![Demo](https://img.shields.io/badge/Live%20Demo-GitHub%20Pages-00d4ff?style=flat-square&logo=github)](https://alirewa.github.io/cyber-toolkit/)
+[![NestJS](https://img.shields.io/badge/API-NestJS%2010-E0234E?style=flat-square&logo=nestjs&logoColor=white)](https://nestjs.com)
+[![Next.js](https://img.shields.io/badge/Web-Next.js%2015-000000?style=flat-square&logo=next.js&logoColor=white)](https://nextjs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
 
-> Dashboard → Tools → Labs → Findings
+[**Live Demo →**](https://alirewa.github.io/cyber-toolkit/) · [Quick Start](#-quick-start) · [Security Tools](#-11-security-tools) · [Bug Bounty Labs](#-14-bug-bounty-labs)
 
-| Dashboard | Security Tools | Bug Bounty Labs |
-|-----------|---------------|-----------------|
-| ![dashboard](docs/screenshots/dashboard.png) | ![tools](docs/screenshots/tools.png) | ![labs](docs/screenshots/labs.png) |
+</div>
 
 ---
 
-## ✨ Features
+## What is CyberLab?
 
-### 🔧 11 Security Tools (always available, no seed required)
-| Tool | Category | Description |
-|------|----------|-------------|
-| **WHOIS Lookup** | Network | Domain registration, registrar, expiry, nameservers |
-| **DNS Lookup** | Network | A, AAAA, MX, TXT, NS, CNAME record queries |
-| **HTTP Header Analyzer** | Network | Fetch and inspect all HTTP response headers |
-| **SSL Certificate Checker** | Network | TLS cert details, validity, SANs, cipher info |
-| **Technology Stack Detector** | Analysis | CMS, frameworks, CDN, analytics detection |
-| **Security Headers Checker** | Analysis | Grade your target A+ to F on security headers |
-| **robots.txt Analyzer** | Analysis | Disallowed paths, sitemaps, crawl-delay extraction |
-| **Metadata Viewer** | Analysis | Open Graph, Twitter Card, title, description, favicon |
-| **Base64 Encode/Decode** | Encoding | Instant encode/decode, no network needed |
-| **Hash Generator** | Encoding | MD5, SHA-1, SHA-256, SHA-512, SHA3-256, SHA3-512 |
-| **JWT Decoder** | Encoding | Inspect header, payload, expiry without secret |
+CyberLab is a **personal, self-hosted security dashboard** designed for:
 
-### 🧪 14 Bug Bounty Labs (hands-on practice)
-- XSS (Reflected, Stored, DOM-Based)
-- CSRF Fundamentals
-- SQL Injection Basics
-- IDOR — Insecure Direct Object Reference
-- Authentication Flaws
-- Broken Access Control
-- JWT Security Mistakes
-- Rate Limiting & Brute Force
-- SSRF Demo (sandboxed)
-- Insecure File Upload (sandboxed)
-- Security Misconfiguration
-- OWASP Top 10 Mastery (capstone)
+- 🎯 **Bug bounty hunters** — recon, header analysis, SSL/cert inspection, JWT decoding
+- 🔐 **Penetration testers** — WHOIS, DNS enumeration, tech stack detection, security header grading
+- 🧑‍💻 **Security learners** — 14 hands-on labs covering OWASP Top 10, XSS, SQLi, IDOR, SSRF, JWT attacks
+- 📋 **Findings management** — track vulnerabilities discovered, set severity, generate reports
 
-### 📋 Findings & Reports
-- Track vulnerabilities discovered during bug bounty/pen test
-- Severity levels: Critical / High / Medium / Low
-- Generate and export reports
+**No login. No SaaS fees. No cloud dependency.** Launch on your Windows machine or private server with one PowerShell command.
 
 ---
 
-## 🚀 Quick Start (Windows)
+## ✨ Key Features
+
+| Feature | Details |
+|---------|---------|
+| **11 Security Tools** | WHOIS, DNS, SSL, HTTP Headers, Security Headers, Tech Detector, robots.txt, Metadata, Base64, JWT Decoder, Hash Generator |
+| **14 Bug Bounty Labs** | XSS (3 types), CSRF, SQLi, IDOR, Auth Flaws, Broken Access Control, JWT Mistakes, Rate Limiting, SSRF, File Upload, OWASP Top 10 capstone |
+| **Findings Tracker** | Log vulnerabilities with severity (Critical/High/Medium/Low), notes, and status |
+| **Reports** | Generate and export pentest reports from your findings |
+| **Personal Mode** | No auth, no multi-user, no JWT login — straight to dashboard |
+| **One-Command Start** | `.\start-local.ps1` handles Docker DB + deps + migrations + API + Web |
+
+---
+
+## 🔧 11 Security Tools
+
+> All tools run instantly from your browser against any authorized target.
+
+### Network Reconnaissance
+| Tool | Description |
+|------|-------------|
+| **WHOIS Lookup** | Domain registration, registrar, creation/expiry dates, nameservers, RDAP data |
+| **DNS Lookup** | Query A, AAAA, MX, TXT, NS, CNAME records for any domain |
+| **HTTP Header Analyzer** | Fetch and inspect all HTTP response headers from any URL |
+| **SSL Certificate Checker** | TLS cert validity, issuer, SANs, expiry, cipher suite details |
+
+### Analysis & Fingerprinting
+| Tool | Description |
+|------|-------------|
+| **Technology Stack Detector** | Identify CMS, frameworks, CDN, analytics, server technologies |
+| **Security Headers Checker** | Audit security headers with A+ to F grade report (HSTS, CSP, X-Frame-Options…) |
+| **robots.txt Analyzer** | Extract disallowed paths, sitemaps, crawl-delay — find hidden endpoints |
+| **Metadata Viewer** | Extract Open Graph tags, Twitter cards, title, favicon, and meta description |
+
+### Encoding & Cryptography
+| Tool | Description |
+|------|-------------|
+| **Base64 Encode / Decode** | Instant encode/decode — runs entirely in-browser, no network request |
+| **Hash Generator** | MD5, SHA-1, SHA-256, SHA-512, SHA3-256, SHA3-512 hashing |
+| **JWT Decoder** | Decode and inspect JWT header, payload, expiry without needing the secret |
+
+---
+
+## 🧪 14 Bug Bounty Labs
+
+Hands-on practice for OWASP Top 10 and common bug bounty vulnerability classes.
+
+| Lab | Difficulty | Category |
+|-----|------------|----------|
+| Reflected XSS | Beginner | Cross-Site Scripting |
+| Stored XSS | Intermediate | Cross-Site Scripting |
+| DOM-Based XSS | Advanced | Cross-Site Scripting |
+| CSRF Fundamentals | Beginner | Request Forgery |
+| SQL Injection Basics | Intermediate | Injection |
+| IDOR Basics | Beginner | Access Control |
+| Authentication Flaws | Intermediate | Authentication |
+| Broken Access Control | Intermediate | OWASP #1 |
+| JWT Security Mistakes | Intermediate | Token Security |
+| Rate Limiting & Brute Force | Beginner | Misconfiguration |
+| SSRF Demo (sandboxed) | Advanced | Server-Side Forgery |
+| Insecure File Upload (sandboxed) | Advanced | Remote Code Exec |
+| Security Misconfiguration | Beginner | OWASP #5 |
+| OWASP Top 10 Mastery | Advanced | Capstone |
+
+Each lab includes: **objective**, **hints**, **step-by-step guidance**, and **XP reward**.
+
+---
+
+## 🚀 Quick Start
 
 ### Prerequisites
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (for PostgreSQL)
-- [Node.js 20+](https://nodejs.org/)
-- [pnpm](https://pnpm.io/installation) — `npm install -g pnpm`
 
-### 1. Clone the repository
+| Requirement | Download |
+|------------|---------|
+| Docker Desktop | [docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop/) |
+| Node.js 20+ | [nodejs.org](https://nodejs.org/) |
+| pnpm | `npm install -g pnpm` |
+
+### 1. Clone
+
 ```powershell
 git clone https://github.com/Alirewa/cyber-toolkit.git
 cd cyber-toolkit
 ```
 
-### 2. Configure environment
+### 2. Configure
+
 ```powershell
 Copy-Item .env.example .env
-# Edit .env if you want to change DB credentials (defaults work out of the box)
+# Defaults work out of the box — no edits needed
 ```
 
-### 3. Launch everything
+### 3. Launch
+
 ```powershell
 .\start-local.ps1
 ```
 
-This single script:
-- ✅ Checks Docker, Node.js, pnpm
-- ✅ Starts a PostgreSQL 16 container (`cyberlab-db`)
-- ✅ Installs all dependencies
-- ✅ Runs `prisma db push` + seed (creates local user + tools + labs)
-- ✅ Starts API (port `4001`) and Web (port `4000`) in parallel
+This single script automatically:
+- ✅ Verifies Docker, Node.js, pnpm are installed
+- ✅ Starts a PostgreSQL 16 Docker container (`cyberlab-db`)
+- ✅ Installs all workspace dependencies (`pnpm install`)
+- ✅ Runs database migrations (`prisma db push`)
+- ✅ Seeds the database (tools, labs, local admin user)
+- ✅ Starts API on `http://localhost:4001`
+- ✅ Starts Web on `http://localhost:4000`
 
-### 4. Open the dashboard
+### 4. Open
+
 ```
 http://localhost:4000
 ```
-No login required — goes straight to the dashboard.
+
+**No login screen.** You land directly on the dashboard.
 
 ---
 
@@ -104,100 +153,123 @@ No login required — goes straight to the dashboard.
 ```
 cyber-toolkit/
 ├── apps/
-│   ├── api/                  # NestJS 10 backend
+│   ├── api/                    # NestJS 10 — REST API + WebSocket
 │   │   ├── src/modules/
-│   │   │   ├── tools/        # 11 security tool handlers
-│   │   │   ├── labs/         # Bug bounty lab engine
-│   │   │   ├── findings/     # Vulnerability tracking
-│   │   │   └── reporting/    # Report generation
-│   │   └── prisma/           # Schema + seed
-│   └── web/                  # Next.js 15 frontend
+│   │   │   ├── tools/          # 11 tool handlers (WHOIS, DNS, SSL…)
+│   │   │   ├── labs/           # Lab engine + progress tracking
+│   │   │   ├── findings/       # Vulnerability tracker
+│   │   │   └── reporting/      # Report generation
+│   │   └── prisma/             # Schema (PostgreSQL) + seed
+│   └── web/                    # Next.js 15 — App Router frontend
 │       └── src/
-│           ├── app/          # App Router pages
-│           └── components/   # UI components
+│           ├── app/            # Route segments (dashboard, admin)
+│           └── components/     # UI components (tools, labs, ops)
 └── packages/
-    └── types/                # Shared TypeScript types
+    ├── types/                  # Shared TypeScript types
+    └── ui/                     # Shared UI component library
 ```
 
 ### Tech Stack
-| Layer | Technology |
-|-------|-----------|
-| Frontend | Next.js 15 (App Router) + React 19 |
-| UI | Tailwind CSS + Framer Motion + shadcn/ui |
-| State | Zustand v5 + TanStack Query v5 |
-| Backend | NestJS 10 + TypeScript |
-| Database | PostgreSQL 16 (via Docker) |
-| ORM | Prisma 5 |
-| Realtime | Socket.IO |
-| Monorepo | pnpm workspaces + Turborepo |
 
-### Personal Mode Design
-- **No auth**: `BYPASS_AUTH=true` — mock admin user injected at every request
-- **No Redis**: In-memory `Map`-based implementation replaces ioredis
-- **No queue**: Bull/BullMQ removed — tools execute synchronously
-- **No login page**: Root `/` redirects straight to `/dashboard`
-- **Single startup**: One PowerShell script starts everything
+| Layer | Technology | Version |
+|-------|-----------|---------|
+| Frontend | Next.js (App Router) | 15 |
+| UI | Tailwind CSS + Framer Motion | latest |
+| State | Zustand + TanStack Query | v5 |
+| Backend | NestJS + TypeScript | 10 |
+| Database | PostgreSQL (via Docker) | 16 |
+| ORM | Prisma | 5 |
+| Realtime | Socket.IO | latest |
+| Monorepo | pnpm workspaces + Turborepo | latest |
+
+### Personal Mode — How It Works
+
+CyberLab is designed to run as a **single-user personal tool**:
+
+- **No auth required** — `BYPASS_AUTH=true` injects a mock admin user at every request
+- **No Redis** — replaced with an in-memory `Map` implementation
+- **No job queue** — Bull/BullMQ removed; tools execute synchronously
+- **No login page** — root `/` redirects directly to `/dashboard`
+- **Tools always available** — tool list reads from the in-memory handler registry (no seed required for tool listing)
 
 ---
 
 ## ⚙️ Configuration
 
-All settings live in `.env` (copied from `.env.example`):
+Edit `.env` (copied from `.env.example`) to customize:
 
 ```env
-# Personal mode — skip JWT (set false to re-enable auth)
+# Personal mode — skip JWT authentication
 BYPASS_AUTH=true
 
-# Database (Docker container managed by start-local.ps1)
+# Database (managed automatically by start-local.ps1)
 DATABASE_URL=postgresql://cyberlab:devpass123@localhost:5432/cyberlab?schema=public
 
 # Ports
 API_PORT=4001
-WEB_PORT=4000
+NEXT_PUBLIC_API_URL=http://localhost:4001
 ```
 
 ---
 
-## 🛠️ Development
+## 🛠️ Development Commands
 
 ```powershell
-# Start only the database
-docker run -d --name cyberlab-db `
-  -e POSTGRES_DB=cyberlab `
-  -e POSTGRES_USER=cyberlab `
-  -e POSTGRES_PASSWORD=devpass123 `
-  -p 5432:5432 postgres:16-alpine
+# Full startup (recommended)
+.\start-local.ps1
 
-# Install deps
-pnpm install
+# Individual commands
+pnpm install                                      # Install all deps
+pnpm dev                                          # Start API + Web in watch mode
+pnpm build                                        # Build all packages
 
-# Run migrations + seed
-cd apps/api && npx prisma db push && npx prisma db seed
+# Database
+cd apps/api
+npx prisma db push                                # Apply schema
+npx prisma db seed                                # Seed tools, labs, admin user
+npx prisma studio                                 # Open DB GUI at localhost:5555
 
-# Start API + Web in dev mode
-pnpm dev
+# Type checking
+pnpm --filter @cyberlab/api exec tsc --noEmit     # Check API types
+pnpm --filter @cyberlab/web exec tsc --noEmit     # Check Web types
 ```
 
 ---
 
-## 📁 Available Scripts
+## 📋 What's Included
 
-| Script | Description |
-|--------|-------------|
-| `.\start-local.ps1` | Full startup — DB + API + Web |
-| `pnpm dev` | Start API + Web in watch mode |
-| `pnpm build` | Build all packages |
-| `pnpm --filter @cyberlab/api exec tsc --noEmit` | Type-check API |
-| `pnpm --filter @cyberlab/web exec tsc --noEmit` | Type-check Web |
+```
+Dashboard
+├── Security Tools
+│   ├── All Tools (11)
+│   ├── Scan History
+│   └── Saved Targets
+├── Bug Bounty Labs
+│   ├── All Labs (14)
+│   └── My Progress
+├── Findings & Reports
+│   ├── Findings (CRUD + severity)
+│   └── Reports (generate + export)
+├── Settings
+│   └── Profile
+└── Admin Panel
+    ├── Users
+    ├── Audit Logs
+    └── System Health
+```
 
 ---
 
-## ⚠️ Legal Disclaimer
+## ⚠️ Legal & Ethical Use
 
-> This toolkit is intended **exclusively for legal, authorized security testing**.  
-> Only test systems you own or have **explicit written permission** to test.  
-> The author is not responsible for any misuse of this software.  
-> Always comply with applicable laws and the scope defined in bug bounty programs.
+> This toolkit is intended **exclusively for legal, authorized security testing**.
+>
+> - ✅ Test only systems you **own** or have **explicit written permission** to test
+> - ✅ Always respect the scope defined in bug bounty program policies
+> - ✅ Follow responsible disclosure practices
+> - ❌ Do **not** use on systems without authorization — unauthorized access is illegal
+>
+> The author is not responsible for any misuse of this software.
 
 ---
 
@@ -207,6 +279,10 @@ MIT — see [LICENSE](LICENSE) for details.
 
 ---
 
-<p align="center">
-  Built for ethical hackers, bug bounty hunters, and security researchers.
-</p>
+<div align="center">
+
+Built for ethical hackers, bug bounty hunters, and security researchers.
+
+**[Live Demo](https://alirewa.github.io/cyber-toolkit/) · [Report an Issue](https://github.com/Alirewa/cyber-toolkit/issues) · [Star on GitHub ⭐](https://github.com/Alirewa/cyber-toolkit)**
+
+</div>
