@@ -1,0 +1,110 @@
+export const queryKeys = {
+  auth: {
+    me: ["auth", "me"] as const,
+    sessions: ["auth", "sessions"] as const,
+  },
+  users: {
+    all: (params?: Record<string, unknown>) => ["users", "list", params] as const,
+    byId: (id: string) => ["users", id] as const,
+  },
+  notifications: {
+    all: (params?: Record<string, unknown>) => ["notifications", "list", params] as const,
+    unreadCount: ["notifications", "unread-count"] as const,
+  },
+  apiKeys: {
+    all: ["api-keys", "list"] as const,
+  },
+  auditLogs: {
+    all: (params?: Record<string, unknown>) => ["audit-logs", "list", params] as const,
+    mine: (params?: Record<string, unknown>) => ["audit-logs", "mine", params] as const,
+  },
+  tools: {
+    all: ["tools", "list"] as const,
+    bySlug: (slug: string) => ["tools", slug] as const,
+    runs: (params?: Record<string, unknown>) => ["tools", "runs", params] as const,
+    run: (id: string) => ["tools", "runs", id] as const,
+    savedTargets: ["tools", "saved-targets"] as const,
+  },
+  labs: {
+    all: (params?: Record<string, unknown>) => ["labs", "list", params] as const,
+    bySlug: (slug: string) => ["labs", slug] as const,
+    myProgress: ["labs", "my-progress"] as const,
+    myAchievements: ["labs", "my-achievements"] as const,
+    myScore: ["labs", "my-score"] as const,
+    leaderboard: ["labs", "leaderboard"] as const,
+    learningPaths: ["labs", "learning-paths"] as const,
+    submissions: (params?: Record<string, unknown>) => ["labs", "submissions", params] as const,
+  },
+  community: {
+    feed: (params?: Record<string, unknown>) => ["community", "feed", params] as const,
+    leaderboard: ["community", "leaderboard"] as const,
+    profile: (username: string) => ["community", "profile", username] as const,
+    myProfile: ["community", "profile", "me"] as const,
+    followers: (username: string) => ["community", "followers", username] as const,
+    following: (username: string) => ["community", "following", username] as const,
+    bookmarks: (params?: Record<string, unknown>) => ["community", "bookmarks", params] as const,
+    search: (q: string) => ["community", "search", q] as const,
+  },
+  teams: {
+    all: (params?: Record<string, unknown>) => ["teams", "list", params] as const,
+    bySlug: (slug: string) => ["teams", slug] as const,
+    myInvitations: ["teams", "invitations", "me"] as const,
+  },
+  discussions: {
+    all: (params?: Record<string, unknown>) => ["discussions", "list", params] as const,
+    byId: (id: string) => ["discussions", id] as const,
+  },
+  writeups: {
+    all: (params?: Record<string, unknown>) => ["writeups", "list", params] as const,
+    bySlug: (slug: string) => ["writeups", slug] as const,
+    mine: (params?: Record<string, unknown>) => ["writeups", "me", params] as const,
+    notes: (labId?: string) => ["writeups", "notes", labId] as const,
+  },
+  mentorship: {
+    mentors: (params?: Record<string, unknown>) => ["mentorship", "list", params] as const,
+    myRequests: (role: string) => ["mentorship", "requests", role] as const,
+  },
+  ops: {
+    workflows: (params?: Record<string, unknown>) => ["ops", "workflows", params] as const,
+    workflowById: (id: string) => ["ops", "workflows", id] as const,
+    executions: (workflowId?: string) => ["ops", "executions", workflowId] as const,
+    executionById: (id: string) => ["ops", "executions", "detail", id] as const,
+    findings: (params?: Record<string, unknown>) => ["ops", "findings", params] as const,
+    findingById: (id: string) => ["ops", "findings", id] as const,
+    findingStats: ["ops", "findings", "stats"] as const,
+    reports: (params?: Record<string, unknown>) => ["ops", "reports", params] as const,
+    reportById: (id: string) => ["ops", "reports", id] as const,
+    reportTemplates: ["ops", "report-templates"] as const,
+    alertRules: ["ops", "alert-rules"] as const,
+    alerts: (params?: Record<string, unknown>) => ["ops", "alerts", params] as const,
+    scheduledJobs: ["ops", "scheduled-jobs"] as const,
+  },
+  // ── Phase 6 ─────────────────────────────────────────────────────────
+  organizations: {
+    myOrgs: ["organizations", "me"] as const,
+    list: (page: number, search?: string) => ["organizations", "list", page, search] as const,
+    detail: (id: string) => ["organizations", id] as const,
+    members: (id: string) => ["organizations", id, "members"] as const,
+    settings: (id: string) => ["organizations", id, "settings"] as const,
+  },
+  billing: {
+    plans: ["billing", "plans"] as const,
+    subscription: (orgId: string) => ["billing", "subscription", orgId] as const,
+    events: (orgId: string) => ["billing", "events", orgId] as const,
+    platformOverview: ["billing", "platform-overview"] as const,
+  },
+  featureFlags: {
+    all: ["feature-flags", "list"] as const,
+    byName: (name: string) => ["feature-flags", name] as const,
+    evaluate: (name: string, orgId?: string) => ["feature-flags", "eval", name, orgId] as const,
+  },
+  apiManagement: {
+    usage: (orgId: string) => ["api-management", "usage", orgId] as const,
+    daily: (orgId: string) => ["api-management", "daily", orgId] as const,
+    topUsers: (orgId: string) => ["api-management", "top-users", orgId] as const,
+    quota: (apiKeyId: string) => ["api-management", "quota", apiKeyId] as const,
+  },
+  backup: {
+    records: (orgId?: string) => ["backup", "records", orgId] as const,
+  },
+};

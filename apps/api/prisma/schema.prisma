@@ -1,0 +1,1612 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  MODERATOR
+  USER
+}
+
+enum ToolRunStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+  TIMEOUT
+}
+
+enum ToolCategory {
+  NETWORK
+  ANALYSIS
+  ENCODING
+}
+
+// â”€â”€ Phase 3: Bug Bounty Lab enums â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+enum LabDifficulty {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum LabCategory {
+  XSS
+  CSRF
+  SQL_INJECTION
+  IDOR
+  AUTHENTICATION
+  ACCESS_CONTROL
+  JWT
+  SSRF
+  FILE_UPLOAD
+  MISCONFIGURATION
+  OWASP_TOP10
+}
+
+enum LabSessionStatus {
+  ACTIVE
+  COMPLETED
+  EXPIRED
+  RESET
+}
+
+enum SubmissionStatus {
+  PENDING
+  EVALUATING
+  PASSED
+  FAILED
+}
+
+enum AchievementType {
+  FIRST_BLOOD
+  COMPLETIONIST
+  SPEED_RUN
+  HINT_FREE
+  STREAK
+  CATEGORY_MASTER
+  LEVEL_UP
+  PERFECT_SCORE
+  SCHOLAR
+}
+
+model User {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  username        String    @unique
+  passwordHash    String
+  avatarUrl       String?
+  bio             String?
+  isEmailVerified Boolean   @default(false)
+  isActive        Boolean   @default(true)
+  isBanned        Boolean   @default(false)
+  banReason       String?
+  lastLoginAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+
+  sessions       Session[]
+  userRoles      UserRole[]
+  auditLogs      AuditLog[]
+  notifications  Notification[]
+  apiKeys        ApiKey[]
+  settings       UserSettings?
+  passwordResets PasswordReset[]
+  toolRuns       ToolRun[]
+  savedTargets   UserSavedTarget[]
+  labSessions    LabSession[]
+  labSubmissions LabSubmission[]
+  labProgress    UserLabProgress[]
+  hintUsages     HintUsage[]
+  score          UserScore?
+  achievements   UserAchievement[]
+
+  // Phase 4 relations
+  profileExtension UserProfileExtension?
+  following      UserFollow[]       @relation("follower")
+  followers      UserFollow[]       @relation("following")
+  bookmarks      Bookmark[]
+  activityTargets ActivityFeed[]    @relation("activityTarget")
+  activityActions ActivityFeed[]    @relation("activityActor")
+  reputationLogs ReputationLog[]
+  teamMembers    TeamMember[]
+  teamInvitesSent     TeamInvitation[] @relation("teamInviter")
+  teamInvitesReceived TeamInvitation[] @relation("teamInvitee")
+  teamActivityLogs    TeamActivityLog[]
+  discussions    Discussion[]       @relation("discussionAuthor")
+  discussionReplies DiscussionReply[] @relation("replyAuthor")
+  discussionVotes   DiscussionVote[]
+  writeups       Writeup[]          @relation("writeupAuthor")
+  notes          Note[]
+  mentorProfile  MentorProfile?
+  mentorRequests    MentorshipRequest[] @relation("studentMentor")
+  studentRequests   MentorshipRequest[] @relation("mentorStudent")
+  reportsFiled      CommunityReport[]   @relation("reporter")
+  reportsReviewed   CommunityReport[]   @relation("reviewer")
+
+  // Phase 5 relations
+  workflows           Workflow[]          @relation("workflowAuthor")
+  workflowExecutions  WorkflowExecution[] @relation("workflowExecutor")
+  scheduledJobs       ScheduledJob[]
+  findings            Finding[]           @relation("findingAuthor")
+  assignedFindings    Finding[]           @relation("findingAssignee")
+  findingComments     FindingComment[]    @relation("findingCommentAuthor")
+  secReports          Report[]            @relation("reportAuthor")
+  reportTemplates     ReportTemplate[]    @relation("reportTemplateAuthor")
+  alertRules          AlertRule[]         @relation("alertRuleAuthor")
+  secAlerts           Alert[]             @relation("alertRecipient")
+
+  // Phase 6 relations
+  orgMemberships OrganizationMember[]
+  apiUsageLogs   ApiUsage[]
+
+  @@index([email])
+  @@index([username])
+  @@index([deletedAt])
+  @@index([isActive, isBanned])
+  @@map("users")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  refreshToken String   @unique
+  ipAddress    String?
+  userAgent    String?
+  lastUsedAt   DateTime @default(now())
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([refreshToken])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+model RoleEntity {
+  id          String   @id @default(cuid())
+  name        Role     @unique
+  description String?
+  isSystem    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  userRoles       UserRole[]
+  rolePermissions RolePermission[]
+
+  @@map("roles")
+}
+
+model UserRole {
+  userId     String
+  roleId     String
+  assignedAt DateTime @default(now())
+  assignedBy String?
+
+  user User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role RoleEntity @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@index([userId])
+  @@map("user_roles")
+}
+
+model Permission {
+  id          String  @id @default(cuid())
+  resource    String
+  action      String
+  description String?
+
+  rolePermissions RolePermission[]
+
+  @@unique([resource, action])
+  @@index([resource])
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+
+  role       RoleEntity @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  action     String
+  resource   String?
+  resourceId String?
+  metadata   Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([action])
+  @@index([resource, resourceId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  readAt    DateTime?
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+  @@map("notifications")
+}
+
+model ApiKey {
+  id             String      @id @default(cuid())
+  userId         String
+  organizationId String?
+  name           String
+  keyHash        String      @unique
+  scope          ApiKeyScope @default(FULL_ACCESS)
+  quotaPerDay    Int?
+  usageToday     Int         @default(0)
+  quotaResetAt   DateTime?
+  lastUsedAt     DateTime?
+  expiresAt      DateTime?
+  isActive       Boolean     @default(true)
+  createdAt      DateTime    @default(now())
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  usageLogs    ApiUsage[]
+
+  @@index([userId])
+  @@index([keyHash])
+  @@index([organizationId])
+  @@map("api_keys")
+}
+
+model UserSettings {
+  userId            String  @id
+  theme             String  @default("dark")
+  language          String  @default("en")
+  notificationPrefs Json    @default("{}")
+  privacySettings   Json    @default("{}")
+  updatedAt         DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_settings")
+}
+
+model PasswordReset {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tokenHash])
+  @@index([userId])
+  @@map("password_resets")
+}
+
+model ToolDefinition {
+  id          String       @id @default(cuid())
+  slug        String       @unique
+  name        String
+  description String
+  category    ToolCategory
+  icon        String
+  isEnabled   Boolean      @default(true)
+  isNetwork   Boolean      @default(false)
+  isInstant   Boolean      @default(false)
+  inputSchema Json
+  version     String       @default("1.0.0")
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  runs        ToolRun[]
+
+  @@index([slug])
+  @@index([category])
+  @@map("tool_definitions")
+}
+
+model ToolRun {
+  id           String        @id @default(cuid())
+  userId       String
+  toolId       String
+  input        Json
+  status       ToolRunStatus @default(PENDING)
+  result       Json?
+  errorMessage String?
+  executionMs  Int?
+  queueJobId   String?
+  retryCount   Int           @default(0)
+  createdAt    DateTime      @default(now())
+  completedAt  DateTime?
+  updatedAt    DateTime      @updatedAt
+
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tool         ToolDefinition @relation(fields: [toolId], references: [id])
+  findings     Finding[]
+
+  @@index([userId, createdAt])
+  @@index([userId, toolId])
+  @@index([status])
+  @@index([queueJobId])
+  @@map("tool_runs")
+}
+
+model UserSavedTarget {
+  id        String   @id @default(cuid())
+  userId    String
+  label     String
+  target    String
+  notes     String?
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("user_saved_targets")
+}
+
+model FeatureFlag {
+  id           String   @id @default(cuid())
+  name         String   @unique
+  description  String?
+  isEnabled    Boolean  @default(false)
+  rolloutPct   Int      @default(100)
+  environments String[] @default(["production", "development"])
+  config       Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("feature_flags")
+}
+
+model Module {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  version     String   @default("1.0.0")
+  isEnabled   Boolean  @default(false)
+  config      Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([slug])
+  @@map("modules")
+}
+
+// â”€â”€ Phase 3: Bug Bounty Lab models â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+model Lab {
+  id           String        @id @default(cuid())
+  slug         String        @unique
+  name         String
+  description  String
+  objective    String
+  category     LabCategory
+  difficulty   LabDifficulty
+  icon         String
+  isEnabled    Boolean       @default(true)
+  isLocked     Boolean       @default(false)
+  xpReward     Int           @default(10)
+  estimatedMin Int           @default(20)
+  isSandboxed  Boolean       @default(false)
+  sandboxImage String?
+  metadata     Json?         // questions, steps, hints structure
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  sessions     LabSession[]
+  submissions  LabSubmission[]
+  progress     UserLabProgress[]
+  discussions  Discussion[]
+  writeups     Writeup[]
+  notes        Note[]
+
+  @@index([category])
+  @@index([difficulty])
+  @@map("labs")
+}
+
+model LabSession {
+  id           String          @id @default(cuid())
+  userId       String
+  labId        String
+  status       LabSessionStatus @default(ACTIVE)
+  sandboxUrl   String?
+  sandboxId    String?
+  expiresAt    DateTime?
+  startedAt    DateTime        @default(now())
+  completedAt  DateTime?
+  resetCount   Int             @default(0)
+
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lab          Lab             @relation(fields: [labId], references: [id])
+  submissions  LabSubmission[]
+
+  @@index([userId, labId])
+  @@index([status])
+  @@index([expiresAt])
+  @@map("lab_sessions")
+}
+
+model LabSubmission {
+  id          String           @id @default(cuid())
+  userId      String
+  labId       String
+  sessionId   String
+  status      SubmissionStatus @default(PENDING)
+  answers     Json
+  score       Int?
+  maxScore    Int
+  feedback    Json?
+  hintsUsed   Int              @default(0)
+  xpEarned    Int              @default(0)
+  timeSpentMs Int?
+  createdAt   DateTime         @default(now())
+  completedAt DateTime?
+
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lab         Lab              @relation(fields: [labId], references: [id])
+  session     LabSession       @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([userId, labId])
+  @@index([status])
+  @@map("lab_submissions")
+}
+
+model UserLabProgress {
+  userId      String
+  labId       String
+  isCompleted Boolean   @default(false)
+  bestScore   Int       @default(0)
+  attempts    Int       @default(0)
+  hintsUsed   Int       @default(0)
+  completedAt DateTime?
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lab         Lab       @relation(fields: [labId], references: [id])
+
+  @@id([userId, labId])
+  @@map("user_lab_progress")
+}
+
+model HintUsage {
+  id        String   @id @default(cuid())
+  userId    String
+  labId     String
+  hintKey   String
+  sessionId String
+  usedAt    DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, labId, hintKey])
+  @@index([userId, labId])
+  @@map("hint_usages")
+}
+
+model UserScore {
+  userId    String   @id
+  totalXp   Int      @default(0)
+  level     Int      @default(1)
+  labsDone  Int      @default(0)
+  streak    Int      @default(0)
+  lastLabAt DateTime?
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_scores")
+}
+
+model Achievement {
+  id          String          @id @default(cuid())
+  slug        String          @unique
+  name        String
+  description String
+  icon        String
+  type        AchievementType
+  xpReward    Int             @default(0)
+  isSecret    Boolean         @default(false)
+  createdAt   DateTime        @default(now())
+
+  userAchievements UserAchievement[]
+
+  @@map("achievements")
+}
+
+model UserAchievement {
+  userId        String
+  achievementId String
+  earnedAt      DateTime    @default(now())
+
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement   Achievement @relation(fields: [achievementId], references: [id])
+
+  @@id([userId, achievementId])
+  @@map("user_achievements")
+}
+
+model LearningPath {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  description String
+  icon        String
+  isEnabled   Boolean  @default(true)
+  labSlugs    String[]
+  createdAt   DateTime @default(now())
+
+  @@map("learning_paths")
+}
+
+// â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
+// â•‘              PHASE 4 â€” Community & Collaboration             â•‘
+// â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+
+// â”€â”€ Phase 4 enums â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+enum TeamRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+enum TeamInviteStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
+
+enum WriteupVisibility {
+  PUBLIC
+  UNLISTED
+  PRIVATE
+}
+
+enum WriteupCategory {
+  XSS
+  SQL_INJECTION
+  RECON
+  WEB_SECURITY
+  API_SECURITY
+  CLOUD_SECURITY
+  OWASP
+  LABS
+  GENERAL
+}
+
+enum DiscussionStatus {
+  OPEN
+  CLOSED
+  PINNED
+  ARCHIVED
+}
+
+enum ModerationStatus {
+  PENDING
+  REVIEWED
+  ACTION_TAKEN
+  DISMISSED
+}
+
+enum ReputationAction {
+  LAB_COMPLETED
+  WRITEUP_PUBLISHED
+  DISCUSSION_HELPFUL
+  DISCUSSION_CREATED
+  REPLY_HELPFUL
+  MENTORSHIP_GIVEN
+  TEAM_PARTICIPATION
+  ACHIEVEMENT_EARNED
+  FIRST_BLOOD
+  STREAK_BONUS
+}
+
+enum MentorshipStatus {
+  PENDING
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+// â”€â”€ User Profile Extension â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+model UserProfileExtension {
+  userId      String   @id
+  skills      String[] @default([])
+  interests   String[] @default([])
+  githubUrl   String?
+  twitterUrl  String?
+  linkedinUrl String?
+  websiteUrl  String?
+  isPublic    Boolean  @default(true)
+  showActivity Boolean @default(true)
+  showAchievements Boolean @default(true)
+  reputation  Int      @default(0)
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_profile_extensions")
+}
+
+// â”€â”€ Following System â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+model UserFollow {
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower    User     @relation("follower",  fields: [followerId],  references: [id], onDelete: Cascade)
+  following   User     @relation("following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@id([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+  @@map("user_follows")
+}
+
+// â”€â”€ Bookmarks â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+model Bookmark {
+  id           String   @id @default(cuid())
+  userId       String
+  resourceType String   // "writeup" | "discussion" | "lab"
+  resourceId   String
+  createdAt    DateTime @default(now())
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, resourceType, resourceId])
+  @@index([userId, resourceType])
+  @@map("bookmarks")
+}
+
+// â”€â”€ Activity Feed â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+model ActivityFeed {
+  id           String   @id @default(cuid())
+  userId       String
+  actorId      String
+  type         String   // "lab_completed" | "writeup_published" | "discussion_created" | "followed" | "achievement_earned" | "team_joined"
+  resourceType String?
+  resourceId   String?
+  metadata     Json?
+  createdAt    DateTime @default(now())
+
+  user         User     @relation("activityTarget", fields: [userId],  references: [id], onDelete: Cascade)
+  actor        User     @relation("activityActor",  fields: [actorId], references: [id], onDelete: Cascade)
+
+  @@index([userId,  createdAt])
+  @@index([actorId, createdAt])
+  @@index([type])
+  @@map("activity_feed")
+}
+
+// â”€â”€ Reputation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+model ReputationLog {
+  id       String           @id @default(cuid())
+  userId   String
+  action   ReputationAction
+  points   Int
+  metadata Json?
+  createdAt DateTime        @default(now())
+
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([action])
+  @@map("reputation_logs")
+}
+
+// â”€â”€ Teams â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+model Team {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  description String?
+  avatarUrl   String?
+  isPublic    Boolean  @default(true)
+  maxMembers  Int      @default(20)
+  totalXp     Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  members     TeamMember[]
+  invitations TeamInvitation[]
+  activityLogs TeamActivityLog[]
+  workflows    Workflow[]
+  findings     Finding[]
+  reports      Report[]
+
+  @@index([slug])
+  @@index([deletedAt])
+  @@map("teams")
+}
+
+model TeamMember {
+  teamId    String
+  userId    String
+  role      TeamRole  @default(MEMBER)
+  joinedAt  DateTime  @default(now())
+
+  team      Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([teamId, userId])
+  @@index([userId])
+  @@map("team_members")
+}
+
+model TeamInvitation {
+  id          String           @id @default(cuid())
+  teamId      String
+  invitedById String
+  invitedUserId String?
+  email       String?
+  role        TeamRole         @default(MEMBER)
+  token       String           @unique @default(cuid())
+  status      TeamInviteStatus @default(PENDING)
+  expiresAt   DateTime
+  createdAt   DateTime         @default(now())
+  respondedAt DateTime?
+
+  team        Team             @relation(fields: [teamId],      references: [id], onDelete: Cascade)
+  invitedBy   User             @relation("teamInviter",  fields: [invitedById], references: [id])
+  invitedUser User?            @relation("teamInvitee",  fields: [invitedUserId], references: [id])
+
+  @@index([teamId])
+  @@index([token])
+  @@index([invitedUserId])
+  @@map("team_invitations")
+}
+
+model TeamActivityLog {
+  id        String   @id @default(cuid())
+  teamId    String
+  userId    String
+  type      String   // "member_joined" | "member_left" | "lab_completed" | "achievement_earned"
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([teamId, createdAt])
+  @@map("team_activity_logs")
+}
+
+// â”€â”€ Discussions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+model Discussion {
+  id           String           @id @default(cuid())
+  authorId     String
+  title        String
+  body         String
+  status       DiscussionStatus @default(OPEN)
+  labId        String?
+  category     String           @default("general") // "lab" | "security" | "writeup" | "general"
+  tags         String[]         @default([])
+  viewCount    Int              @default(0)
+  voteScore    Int              @default(0)
+  replyCount   Int              @default(0)
+  isPinned     Boolean          @default(false)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  deletedAt    DateTime?
+
+  author       User             @relation("discussionAuthor", fields: [authorId], references: [id])
+  lab          Lab?             @relation(fields: [labId], references: [id])
+  replies      DiscussionReply[]
+  votes        DiscussionVote[]
+
+  @@index([authorId])
+  @@index([labId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([voteScore])
+  @@map("discussions")
+}
+
+model DiscussionReply {
+  id           String      @id @default(cuid())
+  discussionId String
+  authorId     String
+  parentId     String?
+  body         String
+  voteScore    Int         @default(0)
+  isAccepted   Boolean     @default(false)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  deletedAt    DateTime?
+
+  discussion   Discussion  @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+  author       User        @relation("replyAuthor",   fields: [authorId], references: [id])
+  parent       DiscussionReply?  @relation("replyThread", fields: [parentId], references: [id])
+  children     DiscussionReply[] @relation("replyThread")
+  votes        DiscussionVote[]
+
+  @@index([discussionId])
+  @@index([authorId])
+  @@index([parentId])
+  @@map("discussion_replies")
+}
+
+model DiscussionVote {
+  id           String   @id @default(cuid())
+  userId       String
+  discussionId String?
+  replyId      String?
+  value        Int      // +1 or -1
+  createdAt    DateTime @default(now())
+
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  discussion   Discussion?      @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+  reply        DiscussionReply? @relation(fields: [replyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, discussionId])
+  @@unique([userId, replyId])
+  @@index([discussionId])
+  @@index([replyId])
+  @@map("discussion_votes")
+}
+
+// â”€â”€ Writeups & Notes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+model Writeup {
+  id          String            @id @default(cuid())
+  authorId    String
+  title       String
+  slug        String            @unique
+  body        String
+  summary     String?
+  category    WriteupCategory   @default(GENERAL)
+  tags        String[]          @default([])
+  visibility  WriteupVisibility @default(PUBLIC)
+  labId       String?
+  viewCount   Int               @default(0)
+  likeCount   Int               @default(0)
+  isDraft     Boolean           @default(false)
+  publishedAt DateTime?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  deletedAt   DateTime?
+
+  author      User              @relation("writeupAuthor", fields: [authorId], references: [id])
+  lab         Lab?              @relation(fields: [labId], references: [id])
+
+  @@index([authorId])
+  @@index([category])
+  @@index([visibility, publishedAt])
+  @@index([slug])
+  @@index([deletedAt])
+  @@map("writeups")
+}
+
+model Note {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  body      String
+  labId     String?
+  tags      String[] @default([])
+  isPinned  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lab       Lab?     @relation(fields: [labId], references: [id])
+
+  @@index([userId, createdAt])
+  @@index([userId, labId])
+  @@map("notes")
+}
+
+// â”€â”€ Mentorship â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+model MentorProfile {
+  userId      String   @id
+  bio         String?
+  expertise   String[] @default([])
+  maxStudents Int      @default(3)
+  isActive    Boolean  @default(true)
+  totalSessions Int    @default(0)
+  rating      Float    @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  requests    MentorshipRequest[] @relation("mentorRequests")
+
+  @@map("mentor_profiles")
+}
+
+model MentorshipRequest {
+  id          String           @id @default(cuid())
+  mentorId    String
+  studentId   String
+  message     String?
+  goals       String[]         @default([])
+  status      MentorshipStatus @default(PENDING)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  resolvedAt  DateTime?
+
+  mentor        User          @relation("studentMentor",  fields: [mentorId],  references: [id], map: "mentorship_requests_mentor_fkey")
+  student       User          @relation("mentorStudent",  fields: [studentId], references: [id])
+  mentorProfile MentorProfile @relation("mentorRequests", fields: [mentorId],  references: [userId], map: "mentorship_requests_profile_fkey")
+
+  @@index([mentorId])
+  @@index([studentId])
+  @@index([status])
+  @@map("mentorship_requests")
+}
+
+// â”€â”€ Moderation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+model CommunityReport {
+  id           String           @id @default(cuid())
+  reporterId   String
+  resourceType String           // "discussion" | "reply" | "writeup" | "user"
+  resourceId   String
+  reason       String
+  details      String?
+  status       ModerationStatus @default(PENDING)
+  reviewedById String?
+  reviewNotes  String?
+  createdAt    DateTime         @default(now())
+  reviewedAt   DateTime?
+
+  reporter     User             @relation("reporter",   fields: [reporterId],   references: [id])
+  reviewedBy   User?            @relation("reviewer",   fields: [reviewedById], references: [id])
+
+  @@index([status])
+  @@index([resourceType, resourceId])
+  @@index([reporterId])
+  @@map("community_reports")
+}
+
+
+// â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
+// â•‘         PHASE 5 â€” Workflow Automation & SecOps Layer         â•‘
+// â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+
+// â”€â”€ Phase 5 enums â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+enum WorkflowStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  ARCHIVED
+}
+
+enum WorkflowTriggerType {
+  MANUAL
+  CRON
+  EVENT
+}
+
+enum ExecutionStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum WorkflowNodeType {
+  TRIGGER
+  TOOL
+  FINDING
+  NOTIFY
+  CONDITION
+  REPORT
+  DELAY
+}
+
+enum FindingSeverity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+  INFO
+}
+
+enum FindingStatus {
+  OPEN
+  IN_PROGRESS
+  MITIGATED
+  CLOSED
+  ARCHIVED
+}
+
+enum ReportType {
+  TOOL_SUMMARY
+  FINDING_SUMMARY
+  PROGRESS
+  TEAM_ACTIVITY
+  WORKFLOW
+  CUSTOM
+}
+
+enum AlertSeverity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum AlertStatus {
+  PENDING
+  DELIVERED
+  ACKNOWLEDGED
+  RESOLVED
+}
+
+enum AlertChannel {
+  IN_APP
+  EMAIL
+  WEBHOOK
+}
+
+enum ScheduledJobType {
+  WORKFLOW
+  REPORT
+  TOOL_RUN
+}
+
+// â”€â”€ Workflows â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+model Workflow {
+  id              String              @id @default(cuid())
+  userId          String
+  teamId          String?
+  name            String
+  description     String?
+  status          WorkflowStatus      @default(DRAFT)
+  triggerType     WorkflowTriggerType @default(MANUAL)
+  triggerConfig   Json?
+  nodes           Json                @default("[]")
+  edges           Json                @default("[]")
+  version         Int                 @default(1)
+  isEnabled       Boolean             @default(true)
+  lastRunAt       DateTime?
+  lastRunStatus   ExecutionStatus?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  user            User                @relation("workflowAuthor", fields: [userId], references: [id])
+  team            Team?               @relation(fields: [teamId], references: [id])
+  executions      WorkflowExecution[]
+  scheduledJob    ScheduledJob?
+
+  @@index([userId])
+  @@index([teamId])
+  @@index([status])
+  @@map("workflows")
+}
+
+model WorkflowExecution {
+  id           String              @id @default(cuid())
+  workflowId   String
+  userId       String
+  status       ExecutionStatus     @default(PENDING)
+  triggerType  WorkflowTriggerType @default(MANUAL)
+  input        Json?
+  output       Json?
+  nodeStates   Json                @default("{}")
+  startedAt    DateTime            @default(now())
+  completedAt  DateTime?
+  durationMs   Int?
+  errorMessage String?
+
+  workflow     Workflow            @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  user         User                @relation("workflowExecutor", fields: [userId], references: [id])
+  logs         ExecutionLog[]
+
+  @@index([workflowId])
+  @@index([userId])
+  @@index([status])
+  @@index([startedAt])
+  @@map("workflow_executions")
+}
+
+model ExecutionLog {
+  id          String            @id @default(cuid())
+  executionId String
+  nodeId      String?
+  level       String            @default("INFO")
+  message     String
+  data        Json?
+  createdAt   DateTime          @default(now())
+
+  execution   WorkflowExecution @relation(fields: [executionId], references: [id], onDelete: Cascade)
+
+  @@index([executionId])
+  @@index([createdAt])
+  @@map("execution_logs")
+}
+
+model ScheduledJob {
+  id             String           @id @default(cuid())
+  userId         String
+  workflowId     String?          @unique
+  name           String
+  type           ScheduledJobType
+  config         Json
+  cronExpression String
+  timezone       String           @default("UTC")
+  isEnabled      Boolean          @default(true)
+  queueJobId     String?
+  lastRunAt      DateTime?
+  nextRunAt      DateTime?
+  lastStatus     ExecutionStatus?
+  runCount       Int              @default(0)
+  failCount      Int              @default(0)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  user           User             @relation(fields: [userId], references: [id])
+  workflow       Workflow?        @relation(fields: [workflowId], references: [id])
+
+  @@index([userId])
+  @@index([isEnabled])
+  @@map("scheduled_jobs")
+}
+
+// â”€â”€ Findings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+model Finding {
+  id           String          @id @default(cuid())
+  userId       String
+  teamId       String?
+  title        String
+  description  String
+  severity     FindingSeverity
+  status       FindingStatus   @default(OPEN)
+  tags         String[]        @default([])
+  target       String?
+  evidence     Json?
+  toolRunId    String?
+  workflowId   String?
+  assignedToId String?
+  resolvedAt   DateTime?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  user         User            @relation("findingAuthor",   fields: [userId],       references: [id])
+  assignedTo   User?           @relation("findingAssignee", fields: [assignedToId], references: [id])
+  team         Team?           @relation(fields: [teamId], references: [id])
+  toolRun      ToolRun?        @relation(fields: [toolRunId], references: [id])
+  comments     FindingComment[]
+
+  @@index([userId])
+  @@index([severity])
+  @@index([status])
+  @@index([createdAt])
+  @@map("findings")
+}
+
+model FindingComment {
+  id        String   @id @default(cuid())
+  findingId String
+  authorId  String
+  body      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  finding   Finding  @relation(fields: [findingId], references: [id], onDelete: Cascade)
+  author    User     @relation("findingCommentAuthor", fields: [authorId], references: [id])
+
+  @@index([findingId])
+  @@map("finding_comments")
+}
+
+// â”€â”€ Reporting â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+model Report {
+  id          String          @id @default(cuid())
+  userId      String
+  teamId      String?
+  title       String
+  type        ReportType
+  content     Json
+  templateId  String?
+  status      String          @default("READY")
+  generatedAt DateTime        @default(now())
+
+  user        User            @relation("reportAuthor", fields: [userId], references: [id])
+  team        Team?           @relation(fields: [teamId], references: [id])
+  template    ReportTemplate? @relation(fields: [templateId], references: [id])
+
+  @@index([userId])
+  @@index([type])
+  @@index([generatedAt])
+  @@map("reports")
+}
+
+model ReportTemplate {
+  id          String     @id @default(cuid())
+  userId      String?
+  name        String
+  description String?
+  type        ReportType
+  config      Json
+  isSystem    Boolean    @default(false)
+  createdAt   DateTime   @default(now())
+
+  user        User?      @relation("reportTemplateAuthor", fields: [userId], references: [id])
+  reports     Report[]
+
+  @@index([isSystem])
+  @@map("report_templates")
+}
+
+// â”€â”€ Alerts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+model AlertRule {
+  id          String        @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  isEnabled   Boolean       @default(true)
+  conditions  Json
+  action      Json
+  severity    AlertSeverity @default(MEDIUM)
+  cooldownMin Int           @default(60)
+  lastFiredAt DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  user        User          @relation("alertRuleAuthor", fields: [userId], references: [id])
+  alerts      Alert[]
+
+  @@index([userId])
+  @@index([isEnabled])
+  @@map("alert_rules")
+}
+
+model Alert {
+  id             String        @id @default(cuid())
+  userId         String
+  ruleId         String?
+  title          String
+  message        String
+  severity       AlertSeverity
+  status         AlertStatus   @default(PENDING)
+  sourceType     String?
+  sourceId       String?
+  createdAt      DateTime      @default(now())
+  acknowledgedAt DateTime?
+  resolvedAt     DateTime?
+
+  user           User          @relation("alertRecipient", fields: [userId], references: [id])
+  rule           AlertRule?    @relation(fields: [ruleId], references: [id])
+  deliveries     AlertDelivery[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([severity])
+  @@index([createdAt])
+  @@map("alerts")
+}
+
+model AlertDelivery {
+  id          String       @id @default(cuid())
+  alertId     String
+  channel     AlertChannel
+  status      String       @default("PENDING")
+  destination String?
+  attempts    Int          @default(0)
+  deliveredAt DateTime?
+  error       String?
+  createdAt   DateTime     @default(now())
+
+  alert       Alert        @relation(fields: [alertId], references: [id], onDelete: Cascade)
+
+  @@index([alertId])
+  @@map("alert_deliveries")
+}
+
+
+// â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
+// â•‘     PHASE 6 â€” Enterprise Architecture & Multi-Tenancy        â•‘
+// â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+
+// â”€â”€ Phase 6 enums â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+enum OrgRole {
+  OWNER
+  ADMIN
+  SECURITY_MANAGER
+  TEAM_LEAD
+  ANALYST
+  MEMBER
+  READ_ONLY
+}
+
+enum PlanTier {
+  FREE
+  PRO
+  TEAM
+  ENTERPRISE
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  TRIALING
+  PAST_DUE
+  CANCELLED
+  PAUSED
+}
+
+enum BillingEventType {
+  SUBSCRIPTION_CREATED
+  SUBSCRIPTION_UPGRADED
+  SUBSCRIPTION_CANCELLED
+  PAYMENT_SUCCEEDED
+  PAYMENT_FAILED
+  INVOICE_GENERATED
+  QUOTA_EXCEEDED
+}
+
+enum BackupStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  EXPIRED
+}
+
+enum ApiKeyScope {
+  FULL_ACCESS
+  READ_ONLY
+  TOOLS_ONLY
+  LABS_ONLY
+  REPORTING_ONLY
+}
+
+// â”€â”€ Organization & Multi-Tenancy â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+model Organization {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  name        String
+  domain      String?   @unique
+  logoUrl     String?
+  planTier    PlanTier  @default(FREE)
+  isActive    Boolean   @default(true)
+  maxMembers  Int       @default(5)
+  maxApiKeys  Int       @default(3)
+  settings    Json      @default("{}")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  members          OrganizationMember[]
+  subscription     Subscription?
+  billingEvents    BillingEvent[]
+  featureOverrides FeatureFlagOverride[]
+  tenantSettings   TenantSettings?
+  backupRecords    BackupRecord[]
+  auditArchives    AuditArchive[]
+  apiKeys          ApiKey[]
+
+  @@index([slug])
+  @@index([planTier])
+  @@index([deletedAt])
+  @@map("organizations")
+}
+
+model OrganizationMember {
+  organizationId String
+  userId         String
+  role           OrgRole  @default(MEMBER)
+  joinedAt       DateTime @default(now())
+  invitedById    String?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([organizationId, userId])
+  @@index([userId])
+  @@index([organizationId, role])
+  @@map("organization_members")
+}
+
+// â”€â”€ Plans & Billing â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+model Plan {
+  id               String   @id @default(cuid())
+  tier             PlanTier @unique
+  name             String
+  maxMembers       Int      @default(5)
+  maxApiKeys       Int      @default(3)
+  maxWorkflows     Int      @default(5)
+  maxFindings      Int      @default(100)
+  hasAdvancedRbac  Boolean  @default(false)
+  hasObservability Boolean  @default(false)
+  hasSso           Boolean  @default(false)
+  hasCustomRoles   Boolean  @default(false)
+  priceMonthlyUsd  Int      @default(0)
+  priceYearlyUsd   Int      @default(0)
+  features         Json     @default("[]")
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+
+  @@map("plans")
+}
+
+model Subscription {
+  id                 String             @id @default(cuid())
+  organizationId     String             @unique
+  planTier           PlanTier
+  status             SubscriptionStatus @default(ACTIVE)
+  currentPeriodStart DateTime
+  currentPeriodEnd   DateTime
+  cancelAtPeriodEnd  Boolean            @default(false)
+  externalId         String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([currentPeriodEnd])
+  @@map("subscriptions")
+}
+
+model BillingEvent {
+  id             String           @id @default(cuid())
+  organizationId String
+  type           BillingEventType
+  metadata       Json?
+  amountCents    Int?
+  createdAt      DateTime         @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, createdAt])
+  @@index([type])
+  @@map("billing_events")
+}
+
+// â”€â”€ Tenant Configuration â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+model TenantSettings {
+  organizationId    String   @id
+  allowedDomains    String[] @default([])
+  ssoEnabled        Boolean  @default(false)
+  ssoProvider       String?
+  mfaRequired       Boolean  @default(false)
+  sessionTtlHours   Int      @default(24)
+  ipAllowlist       String[] @default([])
+  customBranding    Json     @default("{}")
+  dataRetentionDays Int      @default(365)
+  updatedAt         DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@map("tenant_settings")
+}
+
+// â”€â”€ Feature Flags (tenant-aware) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+model FeatureFlagOverride {
+  id             String    @id @default(cuid())
+  flagName       String
+  organizationId String?
+  userId         String?
+  isEnabled      Boolean
+  rolloutPct     Int       @default(100)
+  config         Json?
+  expiresAt      DateTime?
+  createdAt      DateTime  @default(now())
+
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([flagName, organizationId, userId])
+  @@index([flagName])
+  @@index([organizationId])
+  @@map("feature_flag_overrides")
+}
+
+// â”€â”€ API Usage Tracking â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+model ApiUsage {
+  id             String   @id @default(cuid())
+  apiKeyId       String
+  userId         String
+  organizationId String?
+  endpoint       String
+  method         String
+  statusCode     Int
+  durationMs     Int
+  ipAddress      String?
+  userAgent      String?
+  createdAt      DateTime @default(now())
+
+  apiKey ApiKey @relation(fields: [apiKeyId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([apiKeyId, createdAt])
+  @@index([userId, createdAt])
+  @@index([organizationId, createdAt])
+  @@index([createdAt])
+  @@map("api_usage")
+}
+
+// â”€â”€ Backup & Recovery â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+model BackupRecord {
+  id             String       @id @default(cuid())
+  organizationId String?
+  type           String
+  status         BackupStatus @default(PENDING)
+  sizeBytes      BigInt?
+  storageKey     String?
+  checksum       String?
+  startedAt      DateTime     @default(now())
+  completedAt    DateTime?
+  expiresAt      DateTime?
+  metadata       Json?
+
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, startedAt])
+  @@index([status])
+  @@map("backup_records")
+}
+
+model AuditArchive {
+  id             String    @id @default(cuid())
+  organizationId String?
+  period         String
+  recordCount    Int
+  storageKey     String
+  sizeBytes      BigInt
+  archivedAt     DateTime  @default(now())
+  expiresAt      DateTime?
+
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, period])
+  @@map("audit_archives")
+}
